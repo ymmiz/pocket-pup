@@ -46,6 +46,18 @@ export function cleanAmount(value) {
   return Number.isFinite(amount) && amount > 0 ? Math.round(amount * 100) / 100 : 0;
 }
 
+export function calculateBillExpression(value) {
+  const expression = String(value ?? "").replaceAll(",", "").replace(/\s+/g, "");
+  if (!/^\d*\.?\d+(?:[+-]\d*\.?\d+)*$/.test(expression)) {
+    return { valid: false, total: 0, hasOperator: /[+-]/.test(expression) };
+  }
+
+  const parts = expression.match(/[+-]?\d*\.?\d+/g) || [];
+  const total = parts.reduce((sum, part) => sum + Number(part), 0);
+  const rounded = round(total);
+  return { valid: Number.isFinite(rounded) && rounded > 0, total: rounded > 0 ? rounded : 0, hasOperator: /[+-]/.test(expression) };
+}
+
 export function monthKey(date = new Date()) {
   const value = typeof date === "string" ? new Date(`${date}T12:00:00`) : date;
   return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}`;

@@ -9,8 +9,8 @@
     <meta name="apple-mobile-web-app-title" content="Pocket Pup" />
     <meta name="description" content="A friendly, private money tracker for income, reserves, expenses, and shared bills." />
     <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png?v=4" />
+    <link rel="icon" href="./icons/icon.svg?v=4" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css" />
     <title>Pocket Pup</title>
   </head>
@@ -183,7 +183,7 @@
             </div>
             <button class="danger-button" id="erase-data" type="button">Erase all data</button>
           </section>
-          <p class="app-version">Pocket Pup version 1.4.0</p>
+          <p class="app-version">Pocket Pup version 1.6.0</p>
         </section>
       </main>
 
@@ -230,6 +230,13 @@
         <div class="amount-field">
           <span id="amount-symbol">฿</span>
           <input id="transaction-amount" name="amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0" required />
+        </div>
+        <div class="bill-calculator" id="bill-calculator" hidden>
+          <div class="bill-operators" aria-label="Bill calculator">
+            <button data-bill-operator="+" type="button">+ Add</button>
+            <button data-bill-operator="-" type="button">− Subtract</button>
+          </div>
+          <p id="bill-calculation-result" role="status" aria-live="polite">Enter an amount, then add or subtract another amount.</p>
         </div>
 
         <div id="standard-fields">
@@ -293,6 +300,6 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./app.js?v=1.4.0"></script>
+    <script type="module" src="./app.js?v=1.6.0"></script>
   </body>
 </html>

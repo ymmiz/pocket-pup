@@ -1,11 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#f8a9b8"/>
-  <circle cx="256" cy="256" r="177" fill="#fff8fa"/>
-  <path d="M173 247c-55-10-76-65-46-101 28-34 70 3 82 42m130 59c55-10 76-65 46-101-28-34-70 3-82 42" fill="#9f5c49"/>
-  <path d="M173 224c0-88 47-133 83-133s83 45 83 133-40 139-83 139-83-51-83-139Z" fill="#fffefe" stroke="#542f2d" stroke-width="16"/>
-  <path d="M179 178c20-51 54-83 79-86-8 28-9 59-2 86-30-10-52-10-77 0Z" fill="#f3c0af"/>
-  <circle cx="222" cy="236" r="13" fill="#542f2d"/><circle cx="290" cy="236" r="13" fill="#542f2d"/>
-  <path d="M235 274c12-12 30-12 42 0-3 18-12 27-21 27s-18-9-21-27Z" fill="#542f2d"/>
-  <path d="M256 300c-7 23-34 29-49 11m49-11c7 23 34 29 49 11" fill="none" stroke="#542f2d" stroke-width="12" stroke-linecap="round"/>
-  <path d="M407 373c-17-15-45-9-53 12-8-21-36-27-53-12-25 23 5 64 53 93 48-29 78-70 53-93Z" fill="#e66f89"/>
+  <defs>
+    <linearGradient id="background" x1="55" y1="38" x2="458" y2="478" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffe9ee"/>
+      <stop offset="1" stop-color="#f4a2b3"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="116" fill="url(#background)"/>
+  <circle cx="256" cy="231" r="205" fill="#fff9fa" opacity=".94"/>
+
+  <!-- Exact Pocket Pup artwork used on the Home screen. -->
+  <g transform="translate(-29 20) scale(3)">
+    <ellipse cx="98" cy="112" rx="73" ry="8" fill="#e7899d" opacity=".2"/>
+    <path d="M58 67c-18 2-29-14-23-29 7-17 26-7 33 6" fill="#9f5c49"/>
+    <path d="M134 67c18 2 29-14 23-29-7-17-26-7-33 6" fill="#9f5c49"/>
+    <path d="M55 61c1-28 18-43 42-43 25 0 42 16 42 44 0 26-18 43-42 43-24 0-43-17-42-44Z" fill="#fff9f8" stroke="#542f2d" stroke-width="4"/>
+    <path d="M61 43c7-19 24-26 36-25-5 8-9 18-8 28-11-3-20-4-28-3Z" fill="#eab29e"/>
+    <circle cx="79" cy="61" r="4" fill="#542f2d"/>
+    <circle cx="116" cy="61" r="4" fill="#542f2d"/>
+    <path d="M91 73c4-4 10-4 14 0-1 6-4 9-7 9s-6-3-7-9Z" fill="#542f2d"/>
+    <path d="M98 81c-2 8-12 10-17 4m17-4c2 8 12 10 17 4" fill="none" stroke="#542f2d" stroke-width="3" stroke-linecap="round"/>
+    <path d="M47 104c1-16 13-24 27-22 12 2 18 11 19 23H47Zm101 0c-1-16-13-24-27-22-12 2-18 11-19 23h46Z" fill="#fff9f8" stroke="#542f2d" stroke-width="4"/>
+    <path d="M70 99h12m32 0h12" stroke="#e7899d" stroke-width="3" stroke-linecap="round"/>
+  </g>
 </svg>

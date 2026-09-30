@@ -1,15 +1,15 @@
-const CACHE = "pocket-pup-v7";
+const CACHE = "pocket-pup-v11";
 const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
-  "./app.js?v=1.4.0",
+  "./app.js?v=1.6.0",
   "./model.js",
   "./manifest.webmanifest",
-  "./icons/icon.svg",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png",
-  "./icons/apple-touch-icon.png"
+  "./icons/icon.svg?v=4",
+  "./icons/icon-192.png?v=4",
+  "./icons/icon-512.png?v=4",
+  "./icons/apple-touch-icon.png?v=4"
 ];
 
 self.addEventListener("install", (event) => {

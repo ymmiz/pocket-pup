@@ -247,6 +247,12 @@ dialog[open] { animation: slide-up .28s ease-out; }
 .amount-field { display: flex; align-items: center; padding: 0 15px; border: 1px solid var(--line); border-radius: var(--radius-md); background: white; }
 .amount-field span { color: var(--muted); font-size: 23px; }
 .amount-field input { width: 100%; padding: 15px 8px; border: 0; background: transparent; font-size: 29px; font-weight: 850; }
+.bill-calculator { margin-top: 8px; }
+.bill-operators { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.bill-operators button { min-height: 40px; border: 1px solid var(--rose-200); border-radius: 12px; color: var(--rose-600); background: var(--rose-100); font-size: 13px; font-weight: 850; cursor: pointer; }
+.bill-operators button:active { color: white; background: var(--rose-400); }
+#bill-calculation-result { margin: 6px 2px 0; color: var(--muted); font-size: 11px; }
+#bill-calculation-result.calculated { color: var(--green); font-weight: 750; }
 .field-help { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
 .category-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .category-chip { min-height: 38px; padding: 8px 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--white); font-size: 12px; font-weight: 800; cursor: pointer; }

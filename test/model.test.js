@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculateSummary, makeDefaultState, normalizeState, splitEvenly, validateSplit } from "../model.js";
+import { calculateBillExpression, calculateSummary, makeDefaultState, normalizeState, splitEvenly, validateSplit } from "../model.js";
 
 test("calculates wallet, remaining reserves, safe money, and debts", () => {
   const state = makeDefaultState();
@@ -22,6 +22,13 @@ test("calculates wallet, remaining reserves, safe money, and debts", () => {
 test("equal split keeps every cent", () => {
   assert.deepEqual(splitEvenly(100, 3), [33.34, 33.33, 33.33]);
   assert.equal(validateSplit(100, 33.34, [33.33, 33.33]).valid, true);
+});
+
+test("adds and subtracts items in a shared bill", () => {
+  assert.deepEqual(calculateBillExpression("253 + 40 - 15"), { valid: true, total: 278, hasOperator: true });
+  assert.deepEqual(calculateBillExpression("99.95"), { valid: true, total: 99.95, hasOperator: false });
+  assert.equal(calculateBillExpression("253 +").valid, false);
+  assert.equal(calculateBillExpression("100 - 150").valid, false);
 });
 
 test("normalization rejects unknown currency and unsafe shapes", () => {

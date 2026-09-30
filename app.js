@@ -1,5 +1,6 @@
 import {
   STORAGE_KEY,
+  calculateBillExpression,
   calculateSummary,
   cleanAmount,
   createId,
@@ -32,6 +33,8 @@ const els = {
   form: $("#transaction-form"),
   kind: $("#transaction-kind"),
   amount: $("#transaction-amount"),
+  billCalculator: $("#bill-calculator"),
+  billResult: $("#bill-calculation-result"),
   date: $("#transaction-date"),
   note: $("#transaction-note"),
   category: $("#transaction-category"),
@@ -109,6 +112,10 @@ function bindEvents() {
   $$("[data-kind]").forEach((button) => button.addEventListener("click", () => setTransactionKind(button.dataset.kind)));
   $("#add-friend-row").addEventListener("click", () => addFriendRow());
   $("#split-equally").addEventListener("click", applyEvenSplit);
+  els.billCalculator.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-bill-operator]");
+    if (button) insertBillOperator(button.dataset.billOperator);
+  });
   els.amount.addEventListener("input", updateSplitStatus);
   els.yourShare.addEventListener("input", updateSplitStatus);
   els.friendRows.addEventListener("input", updateSplitStatus);
@@ -294,6 +301,15 @@ function setTransactionKind(kind) {
   $$("[data-kind]").forEach((button) => button.classList.toggle("active", button.dataset.kind === kind));
   const split = kind === "split";
   const expense = kind === "expense";
+  els.amount.type = split ? "text" : "number";
+  if (split) {
+    els.amount.removeAttribute("min");
+    els.amount.removeAttribute("step");
+  } else {
+    els.amount.min = "0";
+    els.amount.step = "0.01";
+  }
+  els.billCalculator.hidden = !split;
   els.splitFields.hidden = !split;
   els.standardFields.hidden = split;
   els.reserveField.hidden = !(split || expense);
@@ -344,7 +360,7 @@ function addFriendRow(name = "", amount = "") {
 
 function applyEvenSplit() {
   const rows = $$(".friend-row", els.friendRows);
-  const shares = splitEvenly(els.amount.value, rows.length + 1);
+  const shares = splitEvenly(getTransactionAmount(), rows.length + 1);
   if (!shares.length) {
     els.error.textContent = "Enter the total bill first.";
     return;
@@ -357,17 +373,41 @@ function applyEvenSplit() {
 
 function updateSplitStatus() {
   if (els.kind.value !== "split") return;
+  const bill = calculateBillExpression(els.amount.value);
+  if (bill.valid) {
+    els.billResult.textContent = `${bill.hasOperator ? "Calculated total" : "Bill total"}: ${money(bill.total)}`;
+    els.billResult.classList.add("calculated");
+  } else {
+    els.billResult.textContent = els.amount.value.trim() ? "Finish the calculation to get the total." : "Enter an amount, then add or subtract another amount.";
+    els.billResult.classList.remove("calculated");
+  }
   const amounts = $$(".friend-amount", els.friendRows).map((input) => input.value);
-  const result = validateSplit(els.amount.value, els.yourShare.value, amounts);
+  const result = validateSplit(bill.total, els.yourShare.value, amounts);
   els.splitMessage.textContent = result.valid ? "Perfect — all shares match the bill." : `${money(result.shares)} assigned of ${money(result.total)}.`;
   els.splitMessage.classList.toggle("valid", result.valid);
+}
+
+function insertBillOperator(operator) {
+  const current = els.amount.value.trim();
+  if (!current) {
+    els.amount.focus();
+    return;
+  }
+  els.amount.value = /[+-]\s*$/.test(current) ? current.replace(/[+-]\s*$/, `${operator} `) : `${current} ${operator} `;
+  updateSplitStatus();
+  els.amount.focus();
+  els.amount.setSelectionRange(els.amount.value.length, els.amount.value.length);
+}
+
+function getTransactionAmount() {
+  return els.kind.value === "split" ? calculateBillExpression(els.amount.value).total : cleanAmount(els.amount.value);
 }
 
 function saveTransaction(event) {
   event.preventDefault();
   const kind = els.kind.value;
-  const amount = cleanAmount(els.amount.value);
-  if (!amount) return formError("Enter an amount greater than zero.");
+  const amount = getTransactionAmount();
+  if (!amount) return formError(kind === "split" ? "Enter or finish a bill calculation greater than zero." : "Enter an amount greater than zero.");
   const existing = editingTransactionId ? state.transactions.find((item) => item.id === editingTransactionId) : null;
   const base = {
     id: existing?.id || createId("tx"), kind, amount, date: els.date.value,
