@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f8a9b8" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Pocket Pup" />
+    <meta name="description" content="A friendly, private money tracker for income, reserves, expenses, and shared bills." />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Pocket Pup</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow" id="today-label"></p>
+          <h1>Pocket Pup</h1>
+        </div>
+        <button class="icon-button" id="settings-shortcut" type="button" aria-label="Open settings">
+          <svg class="settings-paw" aria-hidden="true" viewBox="0 0 24 24">
+            <ellipse cx="6.2" cy="7.1" rx="2.1" ry="2.7" transform="rotate(-28 6.2 7.1)"/>
+            <ellipse cx="11" cy="5.2" rx="2.1" ry="2.8" transform="rotate(-6 11 5.2)"/>
+            <ellipse cx="17.2" cy="7.1" rx="2.1" ry="2.7" transform="rotate(28 17.2 7.1)"/>
+            <path d="M12 10.1c3.7 0 6.8 3.4 6.8 6.4 0 2.3-1.8 3.7-4 3.7-1.1 0-1.9-.5-2.8-.5s-1.7.5-2.8.5c-2.2 0-4-1.4-4-3.7 0-3 3.1-6.4 6.8-6.4Z"/>
+          </svg>
+        </button>
+      </header>
+
+      <main>
+        <section class="view active" id="home-view" aria-labelledby="home-title">
+          <h2 class="sr-only" id="home-title">Home</h2>
+          <article class="welcome-card">
+            <div>
+              <p class="eyebrow">Your money today</p>
+              <h2 id="welcome-message">You’ve got this.</h2>
+              <p class="muted" id="welcome-detail">Add income, then protect what matters.</p>
+            </div>
+            <svg class="dog dog-resting" viewBox="0 0 190 125" role="img" aria-label="A happy resting dog">
+              <ellipse cx="98" cy="112" rx="73" ry="8" fill="#e7899d" opacity=".18"/>
+              <path d="M58 67c-18 2-29-14-23-29 7-17 26-7 33 6" fill="#9f5c49"/>
+              <path d="M134 67c18 2 29-14 23-29-7-17-26-7-33 6" fill="#9f5c49"/>
+              <path d="M55 61c1-28 18-43 42-43 25 0 42 16 42 44 0 26-18 43-42 43-24 0-43-17-42-44Z" fill="#fff9f8" stroke="#542f2d" stroke-width="4"/>
+              <path d="M61 43c7-19 24-26 36-25-5 8-9 18-8 28-11-3-20-4-28-3Z" fill="#eab29e"/>
+              <circle cx="79" cy="61" r="4" fill="#542f2d"/><circle cx="116" cy="61" r="4" fill="#542f2d"/>
+              <path d="M91 73c4-4 10-4 14 0-1 6-4 9-7 9s-6-3-7-9Z" fill="#542f2d"/>
+              <path d="M98 81c-2 8-12 10-17 4m17-4c2 8 12 10 17 4" fill="none" stroke="#542f2d" stroke-width="3" stroke-linecap="round"/>
+              <path d="M47 104c1-16 13-24 27-22 12 2 18 11 19 23H47Zm101 0c-1-16-13-24-27-22-12 2-18 11-19 23h46Z" fill="#fff9f8" stroke="#542f2d" stroke-width="4"/>
+              <path d="M70 99h12m32 0h12" stroke="#e7899d" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </article>
+
+          <section class="balance-card" aria-label="Money summary">
+            <div class="balance-main">
+              <span>Current balance</span>
+              <strong id="balance-value">฿0</strong>
+            </div>
+            <div class="summary-grid">
+              <div>
+                <span><i class="status-dot reserved"></i>Reserved</span>
+                <strong id="reserved-value">฿0</strong>
+              </div>
+              <div>
+                <span><i class="status-dot safe"></i>Safe to spend</span>
+                <strong id="safe-value">฿0</strong>
+              </div>
+            </div>
+            <button class="primary-button" data-open-transaction type="button">
+              <span class="button-plus">+</span> Add transaction
+            </button>
+          </section>
+
+          <section class="section-block">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow" id="reserve-period"></p>
+                <h2>Protected money</h2>
+              </div>
+              <button class="text-button" data-open-reserves type="button">Manage</button>
+            </div>
+            <div class="reserve-list" id="home-reserves"></div>
+          </section>
+
+          <section class="section-block">
+            <div class="section-heading">
+              <h2>Recent activity</h2>
+              <button class="text-button" data-go="activity" type="button">See all</button>
+            </div>
+            <div class="activity-list" id="recent-activity"></div>
+          </section>
+        </section>
+
+        <section class="view" id="activity-view" aria-labelledby="activity-title">
+          <div class="page-heading">
+            <p class="eyebrow">Every movement</p>
+            <h2 id="activity-title">Activity</h2>
+          </div>
+          <div class="filter-row" role="group" aria-label="Filter transactions">
+            <button class="filter-chip active" data-filter="all" type="button">All</button>
+            <button class="filter-chip" data-filter="income" type="button">Income</button>
+            <button class="filter-chip" data-filter="expense" type="button">Spent</button>
+            <button class="filter-chip" data-filter="split" type="button">Split</button>
+          </div>
+          <div class="activity-list full-list" id="all-activity"></div>
+        </section>
+
+        <section class="view" id="friends-view" aria-labelledby="friends-title">
+          <div class="page-heading friends-heading">
+            <div>
+              <p class="eyebrow">Shared expenses</p>
+              <h2 id="friends-title">Friends</h2>
+            </div>
+            <svg class="dog dog-small" viewBox="0 0 190 125" aria-hidden="true">
+              <ellipse cx="98" cy="112" rx="73" ry="8" fill="#e7899d" opacity=".18"/>
+              <path d="M58 67c-18 2-29-14-23-29 7-17 26-7 33 6" fill="#9f5c49"/>
+              <path d="M134 67c18 2 29-14 23-29-7-17-26-7-33 6" fill="#9f5c49"/>
+              <path d="M55 61c1-28 18-43 42-43 25 0 42 16 42 44 0 26-18 43-42 43-24 0-43-17-42-44Z" fill="#fff9f8" stroke="#542f2d" stroke-width="4"/>
+              <path d="M61 43c7-19 24-26 36-25-5 8-9 18-8 28-11-3-20-4-28-3Z" fill="#eab29e"/>
+              <circle cx="79" cy="61" r="4" fill="#542f2d"/><circle cx="116" cy="61" r="4" fill="#542f2d"/>
+              <path d="M91 73c4-4 10-4 14 0-1 6-4 9-7 9s-6-3-7-9Z" fill="#542f2d"/>
+              <path d="M98 81c-2 8-12 10-17 4m17-4c2 8 12 10 17 4" fill="none" stroke="#542f2d" stroke-width="3" stroke-linecap="round"/>
+              <path d="M47 104c1-16 13-24 27-22 12 2 18 11 19 23H47Zm101 0c-1-16-13-24-27-22-12 2-18 11-19 23h46Z" fill="#fff9f8" stroke="#542f2d" stroke-width="4"/>
+              <path d="M70 99h12m32 0h12" stroke="#e7899d" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <article class="owed-summary">
+            <span>Friends owe you</span>
+            <strong id="owed-value">฿0</strong>
+            <p id="owed-caption">All settled up. Nice!</p>
+          </article>
+          <div class="debt-list" id="debt-list"></div>
+          <button class="secondary-button full-width" data-open-transaction data-default-kind="split" type="button">+ Add a shared bill</button>
+        </section>
+
+        <section class="view" id="more-view" aria-labelledby="more-title">
+          <div class="page-heading">
+            <p class="eyebrow">Make it yours</p>
+            <h2 id="more-title">Settings</h2>
+          </div>
+
+          <section class="settings-card">
+            <div class="section-heading compact">
+              <div>
+                <h3>Monthly reserves</h3>
+                <p>Set aside money before spending.</p>
+              </div>
+            </div>
+            <form id="reserves-form" class="reserves-form"></form>
+          </section>
+
+          <section class="settings-card">
+            <h3>Currency</h3>
+            <label class="field-label" for="currency-select">Display currency</label>
+            <select id="currency-select">
+              <option value="THB">Thai baht (฿)</option>
+              <option value="USD">US dollar ($)</option>
+              <option value="EUR">Euro (€)</option>
+              <option value="GBP">British pound (£)</option>
+              <option value="JPY">Japanese yen (¥)</option>
+              <option value="MMK">Myanmar kyat (K)</option>
+            </select>
+          </section>
+
+          <section class="settings-card install-card">
+            <div class="install-icon" aria-hidden="true">↗</div>
+            <div>
+              <h3>Install on iPhone</h3>
+              <p>Open this page in Safari, tap <strong>Share</strong>, then choose <strong>Add to Home Screen</strong>.</p>
+            </div>
+          </section>
+
+          <section class="settings-card">
+            <h3>Your private data</h3>
+            <p>Everything stays in this browser. Export a backup before changing phones or clearing Safari data.</p>
+            <div class="button-row">
+              <button class="secondary-button" id="export-data" type="button">Export backup</button>
+              <label class="secondary-button file-button" for="import-data">Import backup</label>
+              <input class="sr-only" id="import-data" type="file" accept="application/json" />
+            </div>
+            <button class="danger-button" id="erase-data" type="button">Erase all data</button>
+          </section>
+          <p class="app-version">Pocket Pup version 1.4.0</p>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" aria-label="Main navigation">
+        <button class="nav-item active" data-view="home" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 10 8-6 8 6v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1v-9Z"/></svg>
+          <span>Home</span>
+        </button>
+        <button class="nav-item" data-view="activity" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <span>Activity</span>
+        </button>
+        <button class="nav-add" data-open-transaction type="button" aria-label="Add transaction">+</button>
+        <button class="nav-item" data-view="friends" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2"/><path d="M3 20c0-4 2-6 6-6s6 2 6 6m0-5c3 0 5 2 5 5"/></svg>
+          <span>Friends</span>
+        </button>
+        <button class="nav-item" data-view="more" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+          <span>More</span>
+        </button>
+      </nav>
+    </div>
+
+    <dialog id="transaction-dialog">
+      <form id="transaction-form" method="dialog">
+        <div class="dialog-handle" aria-hidden="true"></div>
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">Quick and simple</p>
+            <h2>Add transaction</h2>
+          </div>
+          <button class="icon-button close-dialog" type="button" aria-label="Close">×</button>
+        </div>
+
+        <div class="kind-switch" role="tablist" aria-label="Transaction type">
+          <button class="active" data-kind="income" type="button" role="tab">↓ <span>Income</span></button>
+          <button data-kind="expense" type="button" role="tab">↑ <span>Expense</span></button>
+          <button data-kind="split" type="button" role="tab">♙ <span>Split bill</span></button>
+        </div>
+
+        <input id="transaction-kind" type="hidden" value="income" />
+        <label class="field-label" for="transaction-amount"><span id="amount-label">Amount received</span></label>
+        <div class="amount-field">
+          <span id="amount-symbol">฿</span>
+          <input id="transaction-amount" name="amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0" required />
+        </div>
+
+        <div id="standard-fields">
+          <span class="field-label">Category</span>
+          <div class="category-chips" id="transaction-categories" role="radiogroup" aria-label="Category"></div>
+          <select class="sr-only" id="transaction-category" name="category" tabindex="-1" aria-hidden="true"></select>
+        </div>
+
+        <div id="reserve-field" hidden>
+          <label class="field-label" for="transaction-reserve">Use protected money</label>
+          <select id="transaction-reserve" name="reserveId"></select>
+          <p class="field-help" id="reserve-help">Choose which protected money to use.</p>
+        </div>
+
+        <div id="split-fields" hidden>
+          <div class="split-heading">
+            <label class="field-label" for="your-share">Your share</label>
+            <button class="text-button" id="split-equally" type="button">Split equally</button>
+          </div>
+          <div class="money-input">
+            <span class="inline-symbol">฿</span>
+            <input id="your-share" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0" />
+          </div>
+          <div class="split-heading friends-label">
+            <span class="field-label">Friends’ shares</span>
+            <button class="text-button" id="add-friend-row" type="button">+ Add friend</button>
+          </div>
+          <div id="friend-rows"></div>
+          <p class="split-total" id="split-total-message">Shares must add up to the bill total.</p>
+        </div>
+
+        <div class="form-grid">
+          <div>
+            <label class="field-label" for="transaction-date">Date</label>
+            <input id="transaction-date" name="date" type="date" required />
+          </div>
+          <div>
+            <label class="field-label" for="transaction-note">Note</label>
+            <input id="transaction-note" name="note" type="text" maxlength="80" placeholder="Optional" />
+          </div>
+        </div>
+        <p class="form-error" id="transaction-error" role="alert"></p>
+        <button class="primary-button full-width" id="save-transaction" type="submit">Save income</button>
+      </form>
+    </dialog>
+
+    <dialog id="reserve-dialog" class="reserve-dialog">
+      <form id="quick-reserves-form" method="dialog">
+        <div class="dialog-handle" aria-hidden="true"></div>
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">Monthly protection</p>
+            <h2>Set your reserves</h2>
+          </div>
+          <button class="icon-button close-reserves" type="button" aria-label="Close">×</button>
+        </div>
+        <p class="reserve-explainer">Enter the amount you need to keep for each purpose. This does not spend the money—it removes it from “Safe to spend.”</p>
+        <div class="reserves-form" id="quick-reserve-fields"></div>
+        <button class="primary-button full-width" type="submit">Save protected money</button>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="./app.js?v=1.4.0"></script>
+  </body>
+</html>
