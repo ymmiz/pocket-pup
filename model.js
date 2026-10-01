@@ -8,11 +8,12 @@ export const reservePresets = [
 
 export function makeDefaultState() {
   return {
-    version: 1,
+    version: 2,
     currency: "THB",
     reserves: reservePresets.map((item) => ({ ...item, target: 0 })),
     transactions: [],
-    debts: []
+    debts: [],
+    payables: []
   };
 }
 
@@ -21,20 +22,45 @@ export function normalizeState(value) {
   if (!value || typeof value !== "object") return base;
   const knownCurrencies = new Set(["THB", "USD", "EUR", "GBP", "JPY", "MMK"]);
   const incomingReserves = Array.isArray(value.reserves) ? value.reserves : [];
+  const presetIds = new Set(base.reserves.map((item) => item.id));
+  const customReserves = incomingReserves.filter((item) => {
+    return item && !presetIds.has(item.id) && typeof item.id === "string" && typeof item.name === "string" && item.name.trim();
+  }).map((item) => ({
+    id: item.id,
+    name: item.name.trim().slice(0, 40),
+    icon: typeof item.icon === "string" ? item.icon : "♡",
+    color: "pink",
+    custom: true,
+    target: cleanAmount(item.target)
+  }));
+  const savedReserves = incomingReserves.filter((item) => {
+    return item && typeof item.id === "string" && typeof item.name === "string" && item.name.trim();
+  }).map((item) => {
+    const preset = reservePresets.find((entry) => entry.id === item.id);
+    return {
+      id: item.id,
+      name: item.name.trim().slice(0, 40),
+      icon: typeof item.icon === "string" ? item.icon : preset?.icon || "♡",
+      color: preset?.color || "pink",
+      custom: item.custom === true || !preset,
+      target: cleanAmount(item.target)
+    };
+  });
   return {
-    version: 1,
+    version: 2,
     currency: knownCurrencies.has(value.currency) ? value.currency : base.currency,
-    reserves: base.reserves.map((preset) => {
+    reserves: Number(value.version) >= 2 ? savedReserves : [...base.reserves.map((preset) => {
       const match = incomingReserves.find((item) => item.id === preset.id);
       return { ...preset, target: cleanAmount(match?.target) };
-    }),
+    }), ...customReserves],
     transactions: Array.isArray(value.transactions) ? value.transactions.filter(validTransaction) : [],
-    debts: Array.isArray(value.debts) ? value.debts.filter(validDebt) : []
+    debts: Array.isArray(value.debts) ? value.debts.filter(validDebt) : [],
+    payables: Array.isArray(value.payables) ? value.payables.filter(validDebt) : []
   };
 }
 
 function validTransaction(item) {
-  return item && ["income", "expense", "split", "repayment"].includes(item.kind) && cleanAmount(item.amount) > 0;
+  return item && ["income", "expense", "split", "loan", "repayment", "friend-payment"].includes(item.kind) && cleanAmount(item.amount) > 0;
 }
 
 function validDebt(item) {

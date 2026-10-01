@@ -1,9 +1,9 @@
-const CACHE = "pocket-pup-v11";
+const CACHE = "pocket-pup-v13";
 const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
-  "./app.js?v=1.6.0",
+  "./app.js?v=1.8.0",
   "./model.js",
   "./manifest.webmanifest",
   "./icons/icon.svg?v=4",

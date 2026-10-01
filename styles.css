@@ -172,12 +172,21 @@ main { padding: 4px 18px calc(116px + env(safe-area-inset-bottom)); }
 .owed-summary span { font-size: 13px; font-weight: 750; opacity: .92; }
 .owed-summary strong { display: block; margin: 7px 0 2px; font-size: 34px; }
 .owed-summary p { margin: 0; font-size: 12px; opacity: .85; }
+.payable-summary { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-top: 18px; padding: 18px 20px; border: 1px solid var(--rose-200); border-radius: var(--radius-lg); background: var(--white); }
+.payable-summary span { color: var(--muted); font-size: 12px; font-weight: 750; }
+.payable-summary strong { display: block; margin-top: 3px; color: var(--rose-600); font-size: 25px; }
+.payable-summary p { max-width: 150px; margin: 0; color: var(--muted); font-size: 11px; text-align: right; }
 .debt-list { margin: 18px 0 12px; }
 .avatar { display: grid; width: 45px; height: 45px; place-items: center; border-radius: 50%; color: #9d4059; background: var(--rose-200); font-weight: 900; }
 .debt-copy { display: grid; flex: 1; gap: 4px; min-width: 0; }
 .debt-copy span { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .debt-action { display: grid; justify-items: end; gap: 5px; }
 .debt-action button { padding: 0; border: 0; color: var(--rose-600); background: none; font-size: 11px; font-weight: 850; cursor: pointer; }
+.friend-actions { display: grid; gap: 9px; }
+.custom-reserve-form { margin-top: 16px; padding-top: 2px; border-top: 1px solid var(--line); }
+.custom-reserve-row { display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px; margin-bottom: 8px; }
+.custom-reserve-row > input { min-width: 0; padding: 0 11px; border-radius: 12px; }
+.remove-reserve { width: 28px; padding: 0; border: 0; color: #9a5966; background: none; font-size: 20px; cursor: pointer; }
 .settings-card { margin-bottom: 13px; padding: 19px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--white); }
 .settings-card > p { color: var(--muted); font-size: 13px; line-height: 1.5; }
 .reserves-form { display: grid; gap: 10px; }
@@ -235,11 +244,11 @@ dialog {
 dialog::backdrop { background: rgba(71,44,49,.38); backdrop-filter: blur(3px); }
 dialog[open] { animation: slide-up .28s ease-out; }
 @keyframes slide-up { from { opacity: 0; transform: translateY(40px); } }
-#transaction-form, #quick-reserves-form { padding: 8px 20px calc(24px + env(safe-area-inset-bottom)); }
+#transaction-form, #quick-reserves-form, #payable-form { padding: 8px 20px calc(24px + env(safe-area-inset-bottom)); }
 .dialog-handle { width: 42px; height: 5px; margin: 2px auto 14px; border-radius: 5px; background: var(--rose-200); }
 .dialog-heading { display: flex; align-items: center; justify-content: space-between; }
 .close-dialog { border: 0; background: var(--rose-100); font-size: 25px; }
-.kind-switch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin: 20px 0; padding: 5px; border-radius: 17px; background: var(--rose-100); }
+.kind-switch { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 20px 0; padding: 5px; border-radius: 17px; background: var(--rose-100); }
 .kind-switch button { display: grid; min-height: 58px; place-content: center; gap: 2px; border: 0; border-radius: 13px; color: var(--muted); background: transparent; font-size: 19px; cursor: pointer; }
 .kind-switch span { font-size: 11px; font-weight: 800; }
 .kind-switch button.active { color: white; background: var(--rose-400); box-shadow: 0 5px 14px rgba(208,77,105,.2); }
@@ -253,6 +262,8 @@ dialog[open] { animation: slide-up .28s ease-out; }
 .bill-operators button:active { color: white; background: var(--rose-400); }
 #bill-calculation-result { margin: 6px 2px 0; color: var(--muted); font-size: 11px; }
 #bill-calculation-result.calculated { color: var(--green); font-weight: 750; }
+#loan-fields > input { width: 100%; min-height: 48px; padding: 0 12px; border-radius: 13px; }
+#payable-friend-name, #payable-note { width: 100%; min-height: 48px; padding: 0 12px; border-radius: 13px; }
 .field-help { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
 .category-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .category-chip { min-height: 38px; padding: 8px 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--white); font-size: 12px; font-weight: 800; cursor: pointer; }

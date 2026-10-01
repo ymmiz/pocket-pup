@@ -15,6 +15,7 @@ let state = loadState();
 let activeView = "home";
 let activityFilter = "all";
 let editingTransactionId = null;
+let editingPayableId = null;
 
 const $ = (selector, parent = document) => parent.querySelector(selector);
 const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];
@@ -29,6 +30,15 @@ const els = {
   recentActivity: $("#recent-activity"),
   allActivity: $("#all-activity"),
   debtList: $("#debt-list"),
+  payableList: $("#payable-list"),
+  payableDialog: $("#payable-dialog"),
+  payableForm: $("#payable-form"),
+  payableName: $("#payable-friend-name"),
+  payableAmount: $("#payable-amount"),
+  payableCategory: $("#payable-category"),
+  payableDate: $("#payable-date"),
+  payableNote: $("#payable-note"),
+  payableError: $("#payable-error"),
   dialog: $("#transaction-dialog"),
   form: $("#transaction-form"),
   kind: $("#transaction-kind"),
@@ -42,6 +52,8 @@ const els = {
   reserve: $("#transaction-reserve"),
   reserveField: $("#reserve-field"),
   splitFields: $("#split-fields"),
+  loanFields: $("#loan-fields"),
+  loanFriendName: $("#loan-friend-name"),
   standardFields: $("#standard-fields"),
   yourShare: $("#your-share"),
   friendRows: $("#friend-rows"),
@@ -49,6 +61,7 @@ const els = {
   error: $("#transaction-error"),
   saveButton: $("#save-transaction"),
   reservesForm: $("#reserves-form"),
+  customReserveForm: $("#custom-reserve-form"),
   quickReservesForm: $("#quick-reserves-form"),
   quickReserveFields: $("#quick-reserve-fields"),
   reserveDialog: $("#reserve-dialog"),
@@ -132,6 +145,8 @@ function bindEvents() {
   });
   els.form.addEventListener("submit", saveTransaction);
   els.reservesForm.addEventListener("submit", saveReserves);
+  els.reservesForm.addEventListener("click", handleReserveAction);
+  els.customReserveForm.addEventListener("submit", addCustomReserve);
   els.quickReservesForm.addEventListener("submit", saveReserves);
   $(".close-reserves").addEventListener("click", () => els.reserveDialog.close());
   els.currency.addEventListener("change", () => {
@@ -146,6 +161,10 @@ function bindEvents() {
     renderActivity();
   }));
   els.debtList.addEventListener("click", handleDebtAction);
+  $("#open-payable").addEventListener("click", () => openPayable());
+  $(".close-payable").addEventListener("click", closePayable);
+  els.payableForm.addEventListener("submit", savePayable);
+  els.payableList.addEventListener("click", handlePayableAction);
   $("#export-data").addEventListener("click", exportData);
   $("#import-data").addEventListener("change", importData);
   $("#erase-data").addEventListener("click", eraseData);
@@ -159,11 +178,16 @@ function render() {
   els.safe.classList.toggle("negative", summary.safe < 0);
   els.owed.textContent = money(summary.owed);
   els.owedCaption.textContent = summary.owed ? `${state.debts.filter((item) => !item.paid).length} payment${state.debts.filter((item) => !item.paid).length === 1 ? "" : "s"} waiting` : "All settled up. Nice!";
+  const openPayables = state.payables.filter((item) => !item.paid);
+  const payableTotal = openPayables.reduce((total, item) => total + cleanAmount(item.amount), 0);
+  $("#payable-value").textContent = money(payableTotal);
+  $("#payable-caption").textContent = openPayables.length ? `${openPayables.length} payment${openPayables.length === 1 ? "" : "s"} to remember` : "Nothing to pay right now.";
   $("#welcome-message").textContent = summary.safe < 0 ? "Let’s protect your essentials." : summary.wallet ? "You’re in control." : "Let’s get started.";
   $("#welcome-detail").textContent = summary.wallet ? `${money(summary.safe)} is safe to spend right now.` : "Add your first income to see what is safe to spend.";
   renderReserves(summary.reserveDetails);
   renderActivity();
   renderDebts();
+  renderPayables();
   renderSettings();
   updateCurrencySymbols();
 }
@@ -191,7 +215,7 @@ function renderActivity() {
   const sorted = [...state.transactions].sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
   els.recentActivity.innerHTML = sorted.length ? sorted.slice(0, 4).map(transactionMarkup).join("") : emptyState("↕", "Nothing here yet", "Your income and expenses will appear here.");
   const filtered = activityFilter === "all" ? sorted : sorted.filter((item) => {
-    if (activityFilter === "expense") return item.kind === "expense";
+    if (activityFilter === "expense") return ["expense", "friend-payment"].includes(item.kind);
     return item.kind === activityFilter;
   });
   els.allActivity.innerHTML = filtered.length ? filtered.map(transactionMarkup).join("") : emptyState("↕", "No matching activity", "Try another filter or add a transaction.");
@@ -199,10 +223,10 @@ function renderActivity() {
 
 function transactionMarkup(item) {
   const positive = ["income", "repayment"].includes(item.kind);
-  const hasPaidFriend = item.kind === "split" && state.debts.some((debt) => debt.transactionId === item.id && debt.paid);
-  const canEdit = item.kind !== "repayment" && !hasPaidFriend;
-  const icons = { income: "↓", expense: "↑", split: "♙", repayment: "✓" };
-  const labels = { income: "Income", expense: "Expense", split: "Shared bill", repayment: "Friend repaid" };
+  const hasPaidDebt = ["split", "loan"].includes(item.kind) && state.debts.some((debt) => debt.transactionId === item.id && debt.paid);
+  const canEdit = !["repayment", "friend-payment"].includes(item.kind) && !hasPaidDebt;
+  const icons = { income: "↓", expense: "↑", split: "♙", loan: "→", repayment: "✓", "friend-payment": "✓" };
+  const labels = { income: "Income", expense: "Expense", split: "Shared bill", loan: "Money lent", repayment: "Friend repaid", "friend-payment": "Paid friend" };
   const title = item.note || item.category || labels[item.kind];
   return `<article class="activity-item">
     <div class="activity-icon ${positive ? "positive" : "negative"}">${icons[item.kind]}</div>
@@ -211,7 +235,7 @@ function transactionMarkup(item) {
       <strong class="activity-amount ${positive ? "positive-text" : ""}">${positive ? "+" : "−"}${money(item.amount)}</strong>
       <div class="activity-controls">
         ${canEdit ? `<button data-edit-transaction="${item.id}" type="button">Edit</button>` : ""}
-        <button class="delete-link" data-delete-transaction="${item.id}" type="button">${item.kind === "repayment" ? "Undo" : "Delete"}</button>
+        <button class="delete-link" data-delete-transaction="${item.id}" type="button">${["repayment", "friend-payment"].includes(item.kind) ? "Undo" : "Delete"}</button>
       </div>
     </div>
   </article>`;
@@ -221,22 +245,62 @@ function renderDebts() {
   const open = state.debts.filter((item) => !item.paid).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   els.debtList.innerHTML = open.length ? open.map((item) => `<article class="debt-card">
     <div class="avatar">${initials(item.name)}</div>
-    <div class="debt-copy"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.note || "Shared bill")}</span></div>
+    <div class="debt-copy"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.note || (item.source === "loan" ? "Money lent" : "Shared bill"))}</span></div>
     <div class="debt-action"><strong>${money(item.amount)}</strong><button data-mark-paid="${item.id}" type="button">Mark paid</button></div>
-  </article>`).join("") : emptyState("🐾", "Nobody owes you", "Shared bills will appear here until your friends repay you.");
+  </article>`).join("") : emptyState("🐾", "Nobody owes you", "Shared bills and money you lend will appear here until your friends repay you.");
+}
+
+function renderPayables() {
+  const open = state.payables.filter((item) => !item.paid).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  els.payableList.innerHTML = open.length ? open.map((item) => `<article class="debt-card">
+    <div class="avatar">${initials(item.name)}</div>
+    <div class="debt-copy"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.note || item.category || "Money owed")}</span>${item.date ? `<span>Due ${formatDate(item.date)}</span>` : ""}</div>
+    <div class="debt-action"><strong>${money(item.amount)}</strong><button data-pay-payable="${item.id}" type="button">Mark paid</button>
+      <div class="activity-controls"><button data-edit-payable="${item.id}" type="button">Edit</button><button class="delete-link" data-delete-payable="${item.id}" type="button">Delete</button></div>
+    </div>
+  </article>`).join("") : "";
 }
 
 function renderSettings() {
   els.currency.value = state.currency;
-  els.reservesForm.innerHTML = `${reserveFieldsMarkup()}<button class="primary-button full-width" type="submit">Save reserves</button>`;
+  els.reservesForm.innerHTML = `${reserveFieldsMarkup(true)}<button class="primary-button full-width" type="submit">Save reserves</button>`;
 }
 
-function reserveFieldsMarkup() {
-  return state.reserves.map((item) => `<label class="reserve-setting">
+function reserveFieldsMarkup(removable = false) {
+  return state.reserves.map((item) => `<div class="reserve-setting">
     <span class="reserve-icon ${item.color}">${item.icon}</span>
     <span><strong>${escapeHtml(item.name)}</strong><small>Monthly amount</small></span>
-    <span class="setting-money"><i>${currencySymbol()}</i><input name="${item.id}" type="number" min="0" step="0.01" inputmode="decimal" value="${item.target || ""}" placeholder="0"></span>
-  </label>`).join("");
+    <span class="setting-money"><i>${currencySymbol()}</i><input name="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.name)} monthly amount" type="number" min="0" step="0.01" inputmode="decimal" value="${item.target || ""}" placeholder="0"></span>
+    ${removable ? `<button class="remove-reserve" data-remove-reserve="${escapeHtml(item.id)}" type="button" aria-label="Remove ${escapeHtml(item.name)}">×</button>` : ""}
+  </div>`).join("");
+}
+
+function addCustomReserve(event) {
+  event.preventDefault();
+  const nameInput = $("#custom-reserve-name");
+  const amountInput = $("#custom-reserve-amount");
+  const name = nameInput.value.trim();
+  if (!name) return;
+  if (state.reserves.some((item) => item.name.toLowerCase() === name.toLowerCase())) {
+    showToast("That reserve category already exists");
+    return;
+  }
+  state.reserves.push({ id: createId("reserve"), name: name.slice(0, 40), icon: "♡", color: "pink", custom: true, target: cleanAmount(amountInput.value) });
+  saveState();
+  event.currentTarget.reset();
+  render();
+  showToast(`${name} reserve added`);
+}
+
+function handleReserveAction(event) {
+  const button = event.target.closest("[data-remove-reserve]");
+  if (!button) return;
+  const reserve = state.reserves.find((item) => item.id === button.dataset.removeReserve);
+  if (!reserve || !window.confirm(`Remove the ${reserve.name} reserve category? Existing transactions will remain.`)) return;
+  state.reserves = state.reserves.filter((item) => item.id !== reserve.id);
+  saveState();
+  render();
+  showToast(`${reserve.name} reserve removed`);
 }
 
 function openReserves() {
@@ -275,6 +339,9 @@ function openTransaction(kind = "income", transaction = null) {
       if (!relatedDebts.length) addFriendRow();
       els.reserve.value = transaction.reserveId || "";
       updateSplitStatus();
+    } else if (kind === "loan") {
+      const debt = state.debts.find((item) => item.transactionId === transaction.id);
+      els.loanFriendName.value = transaction.friendName || debt?.name || "";
     } else {
       if ([...els.category.options].some((option) => option.value === transaction.category)) {
         selectCategory(transaction.category, false);
@@ -301,6 +368,7 @@ function setTransactionKind(kind) {
   $$("[data-kind]").forEach((button) => button.classList.toggle("active", button.dataset.kind === kind));
   const split = kind === "split";
   const expense = kind === "expense";
+  const loan = kind === "loan";
   els.amount.type = split ? "text" : "number";
   if (split) {
     els.amount.removeAttribute("min");
@@ -311,11 +379,13 @@ function setTransactionKind(kind) {
   }
   els.billCalculator.hidden = !split;
   els.splitFields.hidden = !split;
-  els.standardFields.hidden = split;
+  els.loanFields.hidden = !loan;
+  els.standardFields.hidden = split || loan;
   els.reserveField.hidden = !(split || expense);
-  $("#amount-label").textContent = split ? "Total bill" : expense ? "Amount spent" : "Amount received";
-  els.saveButton.textContent = split ? "Save shared bill" : expense ? "Save expense" : "Save income";
-  const categories = kind === "income" ? ["Salary", "Freelance", "Gift", "Refund", "Other"] : ["Food", "Rent", "Medical", "Transport", "Shopping", "Other"];
+  $("#amount-label").textContent = split ? "Total bill" : loan ? "Amount lent" : expense ? "Amount spent" : "Amount received";
+  els.saveButton.textContent = split ? "Save shared bill" : loan ? "Save money lent" : expense ? "Save expense" : "Save income";
+  const customCategories = state.reserves.filter((item) => item.custom).map((item) => item.name);
+  const categories = kind === "income" ? ["Salary", "Freelance", "Gift", "Refund", "Other"] : [...new Set(["Food", "Rent", "Medical", "Transport", "Shopping", ...customCategories, "Other"])];
   els.category.innerHTML = categories.map((item) => `<option value="${item}">${item}</option>`).join("");
   els.categoryChips.innerHTML = categories.map((item, index) => `<button class="category-chip${index === 0 ? " active" : ""}" data-category="${item}" type="button" role="radio" aria-checked="${index === 0}">${item}</button>`).join("");
   els.reserve.innerHTML = `<option value="">Don’t use a reserve</option>${state.reserves.filter((item) => item.target > 0).map((item) => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join("")}`;
@@ -337,8 +407,7 @@ function selectCategory(category, syncReserve = true) {
 
 function syncReserveToCategory() {
   if (els.kind.value !== "expense") return;
-  const reserveByCategory = { Rent: "rent", Medical: "medical", Food: "food" };
-  const matchingReserve = reserveByCategory[els.category.value] || "";
+  const matchingReserve = state.reserves.find((item) => item.name.toLowerCase() === els.category.value.toLowerCase())?.id || "";
   const available = [...els.reserve.options].some((option) => option.value === matchingReserve);
   els.reserve.value = available ? matchingReserve : "";
   const reserveName = state.reserves.find((item) => item.id === matchingReserve)?.name;
@@ -426,8 +495,18 @@ function saveTransaction(event) {
     if (existing) state.debts = state.debts.filter((debt) => debt.transactionId !== existing.id);
     friends.forEach((friend) => state.debts.push({
       id: createId("debt"), transactionId: base.id, name: friend.name, amount: friend.amount,
-      note: base.note, date: base.date, createdAt: base.createdAt, paid: false
+      note: base.note, source: "split", date: base.date, createdAt: base.createdAt, paid: false
     }));
+  } else if (kind === "loan") {
+    const friendName = els.loanFriendName.value.trim();
+    if (!friendName) return formError("Enter the friend’s name.");
+    base.friendName = friendName;
+    base.category = `Loan to ${friendName}`;
+    if (existing) state.debts = state.debts.filter((debt) => debt.transactionId !== existing.id);
+    state.debts.push({
+      id: createId("debt"), transactionId: base.id, name: friendName, amount,
+      note: base.note, source: "loan", date: base.date, createdAt: base.createdAt, paid: false
+    });
   } else {
     base.category = els.category.value;
     if (kind === "expense") base.reserveId = els.reserve.value || null;
@@ -442,14 +521,14 @@ function saveTransaction(event) {
   saveState();
   closeTransaction();
   render();
-  showToast(existing ? "Transaction updated" : kind === "split" ? "Shared bill saved" : kind === "expense" ? "Expense saved" : "Income saved");
+  showToast(existing ? "Transaction updated" : kind === "split" ? "Shared bill saved" : kind === "loan" ? "Money lent saved" : kind === "expense" ? "Expense saved" : "Income saved");
 }
 
 function editTransaction(id) {
   const transaction = state.transactions.find((item) => item.id === id);
-  if (!transaction || transaction.kind === "repayment") return;
-  if (transaction.kind === "split" && state.debts.some((debt) => debt.transactionId === id && debt.paid)) {
-    showToast("Undo repayments before editing this bill");
+  if (!transaction || ["repayment", "friend-payment"].includes(transaction.kind)) return;
+  if (["split", "loan"].includes(transaction.kind) && state.debts.some((debt) => debt.transactionId === id && debt.paid)) {
+    showToast("Undo repayments before editing this transaction");
     return;
   }
   openTransaction(transaction.kind, transaction);
@@ -460,7 +539,9 @@ function deleteTransaction(id) {
   if (!transaction) return;
   const message = transaction.kind === "repayment"
     ? "Undo this repayment and mark the friend as owing you again?"
-    : "Delete this transaction? Its effect on your balance will be reversed.";
+    : transaction.kind === "friend-payment"
+      ? "Undo this payment and put it back in money you owe?"
+      : "Delete this transaction? Its effect on your balance will be reversed.";
   if (!window.confirm(message)) return;
 
   if (transaction.kind === "repayment") {
@@ -470,8 +551,15 @@ function deleteTransaction(id) {
       delete debt.paidAt;
     }
   }
+  if (transaction.kind === "friend-payment") {
+    const payable = state.payables.find((item) => item.id === transaction.payableId);
+    if (payable) {
+      payable.paid = false;
+      delete payable.paidAt;
+    }
+  }
 
-  if (transaction.kind === "split") {
+  if (["split", "loan"].includes(transaction.kind)) {
     const debtIds = state.debts.filter((debt) => debt.transactionId === id).map((debt) => debt.id);
     state.debts = state.debts.filter((debt) => debt.transactionId !== id);
     state.transactions = state.transactions.filter((item) => item.id !== id && !(item.kind === "repayment" && debtIds.includes(item.debtId)));
@@ -481,7 +569,7 @@ function deleteTransaction(id) {
 
   saveState();
   render();
-  showToast(transaction.kind === "repayment" ? "Repayment undone" : "Transaction deleted");
+  showToast(transaction.kind === "repayment" ? "Repayment undone" : transaction.kind === "friend-payment" ? "Payment undone" : "Transaction deleted");
 }
 
 function saveReserves(event) {
@@ -508,6 +596,93 @@ function handleDebtAction(event) {
   saveState();
   render();
   showToast(`${debt.name} marked as paid`);
+}
+
+function openPayable(payable = null) {
+  editingPayableId = payable?.id || null;
+  els.payableForm.reset();
+  els.payableError.textContent = "";
+  els.payableDate.value = localDate(new Date());
+  const categories = [...new Set(["General", ...state.reserves.map((item) => item.name), "Transport", "Shopping", "Other"])];
+  els.payableCategory.innerHTML = categories.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("");
+  if (payable) {
+    els.payableName.value = payable.name;
+    els.payableAmount.value = payable.amount;
+    els.payableDate.value = payable.date || localDate(new Date());
+    els.payableNote.value = payable.note || "";
+    if ([...els.payableCategory.options].some((option) => option.value === payable.category)) els.payableCategory.value = payable.category;
+    $("#save-payable").textContent = "Update reminder";
+  } else {
+    $("#save-payable").textContent = "Save reminder";
+  }
+  if (!els.payableDialog.open) els.payableDialog.showModal();
+  setTimeout(() => els.payableName.focus(), 80);
+}
+
+function closePayable() {
+  els.payableDialog.close();
+  editingPayableId = null;
+}
+
+function savePayable(event) {
+  event.preventDefault();
+  const name = els.payableName.value.trim();
+  const amount = cleanAmount(els.payableAmount.value);
+  if (!name) {
+    els.payableError.textContent = "Enter your friend’s name.";
+    return;
+  }
+  if (!amount) {
+    els.payableError.textContent = "Enter an amount greater than zero.";
+    return;
+  }
+  const existing = editingPayableId ? state.payables.find((item) => item.id === editingPayableId) : null;
+  const payable = {
+    id: existing?.id || createId("payable"), name, amount, category: els.payableCategory.value,
+    date: els.payableDate.value, note: els.payableNote.value.trim(), paid: false,
+    createdAt: existing?.createdAt || new Date().toISOString()
+  };
+  if (existing) state.payables[state.payables.findIndex((item) => item.id === existing.id)] = payable;
+  else state.payables.push(payable);
+  saveState();
+  closePayable();
+  render();
+  showToast(existing ? "Payment reminder updated" : "Payment reminder saved");
+}
+
+function handlePayableAction(event) {
+  const payButton = event.target.closest("[data-pay-payable]");
+  const editButton = event.target.closest("[data-edit-payable]");
+  const deleteButton = event.target.closest("[data-delete-payable]");
+  if (editButton) {
+    const payable = state.payables.find((item) => item.id === editButton.dataset.editPayable && !item.paid);
+    if (payable) openPayable(payable);
+    return;
+  }
+  if (deleteButton) {
+    const payable = state.payables.find((item) => item.id === deleteButton.dataset.deletePayable && !item.paid);
+    if (!payable || !window.confirm(`Delete the reminder to pay ${payable.name}?`)) return;
+    state.payables = state.payables.filter((item) => item.id !== payable.id);
+    saveState();
+    render();
+    showToast("Payment reminder deleted");
+    return;
+  }
+  if (!payButton) return;
+  const payable = state.payables.find((item) => item.id === payButton.dataset.payPayable);
+  if (!payable || payable.paid) return;
+  payable.paid = true;
+  payable.paidAt = new Date().toISOString();
+  const payableCategory = payable.category || "General";
+  const reserveId = state.reserves.find((item) => item.name.toLowerCase() === payableCategory.toLowerCase())?.id || null;
+  state.transactions.push({
+    id: createId("tx"), kind: "friend-payment", amount: payable.amount, date: localDate(new Date()),
+    note: `Paid ${payable.name}`, category: payableCategory, payableId: payable.id,
+    reserveId, createdAt: payable.paidAt
+  });
+  saveState();
+  render();
+  showToast(`${payable.name} marked as paid`);
 }
 
 function exportData() {

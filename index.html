@@ -104,6 +104,7 @@
             <button class="filter-chip" data-filter="income" type="button">Income</button>
             <button class="filter-chip" data-filter="expense" type="button">Spent</button>
             <button class="filter-chip" data-filter="split" type="button">Split</button>
+            <button class="filter-chip" data-filter="loan" type="button">Lent</button>
           </div>
           <div class="activity-list full-list" id="all-activity"></div>
         </section>
@@ -133,7 +134,19 @@
             <p id="owed-caption">All settled up. Nice!</p>
           </article>
           <div class="debt-list" id="debt-list"></div>
-          <button class="secondary-button full-width" data-open-transaction data-default-kind="split" type="button">+ Add a shared bill</button>
+          <article class="payable-summary">
+            <div>
+              <span>You owe friends</span>
+              <strong id="payable-value">฿0</strong>
+            </div>
+            <p id="payable-caption">Nothing to pay right now.</p>
+          </article>
+          <div class="debt-list" id="payable-list"></div>
+          <button class="secondary-button full-width" id="open-payable" type="button">+ Note money I owe</button>
+          <div class="friend-actions">
+            <button class="primary-button full-width" data-open-transaction data-default-kind="loan" type="button">+ Lend money</button>
+            <button class="secondary-button full-width" data-open-transaction data-default-kind="split" type="button">+ Add a shared bill</button>
+          </div>
         </section>
 
         <section class="view" id="more-view" aria-labelledby="more-title">
@@ -150,6 +163,14 @@
               </div>
             </div>
             <form id="reserves-form" class="reserves-form"></form>
+            <form id="custom-reserve-form" class="custom-reserve-form">
+              <p class="field-label">Add your own category</p>
+              <div class="custom-reserve-row">
+                <input id="custom-reserve-name" type="text" maxlength="40" placeholder="Category name" required />
+                <div class="money-input compact"><span class="inline-symbol">฿</span><input id="custom-reserve-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Amount" /></div>
+              </div>
+              <button class="secondary-button full-width" type="submit">+ Add reserve category</button>
+            </form>
           </section>
 
           <section class="settings-card">
@@ -183,7 +204,7 @@
             </div>
             <button class="danger-button" id="erase-data" type="button">Erase all data</button>
           </section>
-          <p class="app-version">Pocket Pup version 1.6.0</p>
+          <p class="app-version">Pocket Pup version 1.8.0</p>
         </section>
       </main>
 
@@ -223,6 +244,7 @@
           <button class="active" data-kind="income" type="button" role="tab">↓ <span>Income</span></button>
           <button data-kind="expense" type="button" role="tab">↑ <span>Expense</span></button>
           <button data-kind="split" type="button" role="tab">♙ <span>Split bill</span></button>
+          <button data-kind="loan" type="button" role="tab">→ <span>Lend</span></button>
         </div>
 
         <input id="transaction-kind" type="hidden" value="income" />
@@ -268,6 +290,12 @@
           <p class="split-total" id="split-total-message">Shares must add up to the bill total.</p>
         </div>
 
+        <div id="loan-fields" hidden>
+          <label class="field-label" for="loan-friend-name">Friend’s name</label>
+          <input id="loan-friend-name" type="text" maxlength="40" autocomplete="off" placeholder="Who borrowed the money?" />
+          <p class="field-help">This amount will appear under Friends until it is repaid.</p>
+        </div>
+
         <div class="form-grid">
           <div>
             <label class="field-label" for="transaction-date">Date</label>
@@ -280,6 +308,40 @@
         </div>
         <p class="form-error" id="transaction-error" role="alert"></p>
         <button class="primary-button full-width" id="save-transaction" type="submit">Save income</button>
+      </form>
+    </dialog>
+
+    <dialog id="payable-dialog">
+      <form id="payable-form" method="dialog">
+        <div class="dialog-handle" aria-hidden="true"></div>
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">Payment reminder</p>
+            <h2>Money I owe</h2>
+          </div>
+          <button class="icon-button close-payable" type="button" aria-label="Close">×</button>
+        </div>
+        <label class="field-label" for="payable-friend-name">Friend’s name</label>
+        <input id="payable-friend-name" type="text" maxlength="40" placeholder="Who do you need to pay?" required />
+        <label class="field-label" for="payable-amount">Amount to pay</label>
+        <div class="money-input">
+          <span class="inline-symbol">฿</span>
+          <input id="payable-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0" required />
+        </div>
+        <label class="field-label" for="payable-category">Category</label>
+        <select id="payable-category"></select>
+        <div class="form-grid">
+          <div>
+            <label class="field-label" for="payable-date">Due date</label>
+            <input id="payable-date" type="date" required />
+          </div>
+          <div>
+            <label class="field-label" for="payable-note">Note</label>
+            <input id="payable-note" type="text" maxlength="80" placeholder="Optional" />
+          </div>
+        </div>
+        <p class="form-error" id="payable-error" role="alert"></p>
+        <button class="primary-button full-width" id="save-payable" type="submit">Save reminder</button>
       </form>
     </dialog>
 
@@ -300,6 +362,6 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./app.js?v=1.6.0"></script>
+    <script type="module" src="./app.js?v=1.8.0"></script>
   </body>
 </html>

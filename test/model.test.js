@@ -31,9 +31,40 @@ test("adds and subtracts items in a shared bill", () => {
   assert.equal(calculateBillExpression("100 - 150").valid, false);
 });
 
+test("money lent lowers the wallet and repayment restores it", () => {
+  const state = makeDefaultState();
+  state.transactions.push(
+    { kind: "income", amount: 1000, date: "2026-10-01" },
+    { kind: "loan", amount: 250, date: "2026-10-02" }
+  );
+  state.debts.push({ name: "May", amount: 250, paid: false });
+  assert.equal(calculateSummary(state, "2026-10").wallet, 750);
+  assert.equal(calculateSummary(state, "2026-10").owed, 250);
+
+  state.debts[0].paid = true;
+  state.transactions.push({ kind: "repayment", amount: 250, date: "2026-10-03" });
+  assert.equal(calculateSummary(state, "2026-10").wallet, 1000);
+  assert.equal(calculateSummary(state, "2026-10").owed, 0);
+});
+
+test("paying a friend lowers the wallet and can use a custom reserve", () => {
+  const state = makeDefaultState();
+  state.reserves.push({ id: "reserve-friend", name: "Pay friend", icon: "♡", color: "pink", custom: true, target: 300 });
+  state.payables.push({ name: "May", amount: 120, paid: false });
+  state.transactions.push({ kind: "income", amount: 1000, date: "2026-10-01" });
+  assert.equal(calculateSummary(state, "2026-10").wallet, 1000);
+  state.transactions.push({ kind: "friend-payment", amount: 120, reserveId: "reserve-friend", date: "2026-10-04" });
+  const summary = calculateSummary(state, "2026-10");
+  assert.equal(summary.wallet, 880);
+  assert.equal(summary.reserveDetails.find((item) => item.id === "reserve-friend").remaining, 180);
+});
+
 test("normalization rejects unknown currency and unsafe shapes", () => {
-  const state = normalizeState({ currency: "NOPE", transactions: [{ amount: "bad" }], debts: null });
+  const state = normalizeState({ version: 2, currency: "NOPE", reserves: [{ id: "reserve-travel", name: "Travel", target: 500 }], transactions: [{ amount: "bad" }], debts: null, payables: [{ name: "May", amount: 100 }] });
   assert.equal(state.currency, "THB");
   assert.deepEqual(state.transactions, []);
   assert.deepEqual(state.debts, []);
+  assert.equal(state.payables.length, 1);
+  assert.equal(state.reserves.length, 1);
+  assert.equal(state.reserves[0].name, "Travel");
 });
